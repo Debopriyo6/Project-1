@@ -1,0 +1,81 @@
+pipeline {
+
+    agent any
+
+    parameters {
+
+        string(
+            name: 'IMAGE_TAG',
+            defaultValue: 'latest',
+            description: 'Docker image tag'
+        )
+    }
+
+    environment {
+
+        IMAGE_NAME = "debopriyoray662001824/backend-application"
+
+        K8S_NAMESPACE = "default"
+    }
+
+    stages {
+
+        stage('Check Kubernetes Connection') {
+
+            steps {
+
+                sh '''
+                    kubectl get nodes
+                '''
+            }
+        }
+
+        stage('Deploy To Kubernetes') {
+
+            steps {
+
+                sh """
+                    kubectl set image deployment/backend-application \
+                    backend-container=${IMAGE_NAME}:${IMAGE_TAG} \
+                    -n ${K8S_NAMESPACE}
+                """
+            }
+        }
+
+        stage('Verify Rollout') {
+
+            steps {
+
+                sh """
+                    kubectl rollout status deployment/backend-application \
+                    -n ${K8S_NAMESPACE}
+                """
+            }
+        }
+
+        stage('Show Pods') {
+
+            steps {
+
+                sh """
+                    kubectl get pods -n ${K8S_NAMESPACE}
+                """
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo "Deployment successful"
+
+            echo "Image deployed: ${IMAGE_NAME}:${IMAGE_TAG}"
+        }
+
+        failure {
+
+            echo "Deployment failed"
+        }
+    }
+}
