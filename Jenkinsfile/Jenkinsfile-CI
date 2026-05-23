@@ -24,24 +24,8 @@ pipeline {
             }
         }
 
-        stage('Build Backend') {
-            steps {
-                dir('backend-java') {
 
-                    withEnv(["PATH+MAVEN=${MAVEN_HOME}/bin"]) {
-
-                        sh '''
-                            mvn clean install -U  -DskipTests
-                        '''
-                    }
-                }
-            }
-        }
-
-
-
-
-        stage('Debug') {
+         stage('Debug') {
 
     steps {
 
@@ -63,6 +47,22 @@ pipeline {
         }
     }
 }
+
+
+        stage('Build Backend') {
+            steps {
+                dir('backend-java') {
+
+                    withEnv(["PATH+MAVEN=${MAVEN_HOME}/bin"]) {
+
+                        sh '''
+                            mvn clean install -U  -DskipTests
+                        '''
+                    }
+                }
+            }
+        }
+
 
         stage('Docker Login') {
             steps {
