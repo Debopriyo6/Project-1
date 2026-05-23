@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-application
+  namespace: default
+  labels:
+    app: backend-application
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend-application
+  template:
+    metadata:
+      labels:
+        app: backend-application
+    spec:
+      containers:
+        - name: backend-container
+          image: debopriyoray662001824/backend-application:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
