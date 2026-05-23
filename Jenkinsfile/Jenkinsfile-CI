@@ -25,29 +25,6 @@ pipeline {
         }
 
 
-         stage('Debug') {
-
-    steps {
-
-        dir('backend-java') {
-
-            sh '''
-                java -version
-
-                mvn -version
-
-                echo "----- LOMBOK -----"
-
-                mvn dependency:tree | grep lombok
-
-                echo "----- COMPILER -----"
-
-                cat pom.xml | grep compiler-plugin -A 5
-            '''
-        }
-    }
-}
-
 
         stage('Build Backend') {
             steps {
