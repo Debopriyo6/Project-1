@@ -25,7 +25,7 @@
 
     <description>Spring Boot Backend Application</description>
 
-    <packaging>war</packaging>
+    <packaging>jar</packaging>
 
     <properties>
 
