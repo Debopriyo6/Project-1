@@ -1,0 +1,104 @@
+pipeline {
+    agent any
+
+    environment {
+        JAVA_HOME  = tool name: 'Java'
+        MAVEN_HOME = tool name: 'Maven'
+
+        IMAGE_NAME = "debopriyoray662001824/backend-application"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                url: 'https://github.com/Debopriyo6/Project-1.git'
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                dir('backend-java') {
+
+                    withEnv(["PATH+MAVEN=${MAVEN_HOME}/bin"]) {
+
+                        sh '''
+                            mvn clean install -DskipTests
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Docker Login') {
+            steps {
+
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub_creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
+
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    '''
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+
+                sh """
+                    docker build \
+                    -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                    -t ${IMAGE_NAME}:latest \
+                    backend-java/
+                """
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+
+                sh """
+                    docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+                    docker push ${IMAGE_NAME}:latest
+                """
+            }
+        }
+
+        stage('Show Image Info') {
+            steps {
+
+                echo "Docker image pushed successfully"
+
+                echo "Image:"
+                echo "${IMAGE_NAME}:${IMAGE_TAG}"
+            }
+        }
+    }
+
+    post {
+
+        success {
+
+            echo "CI Pipeline completed successfully"
+        }
+
+        failure {
+
+            echo "Pipeline failed"
+        }
+
+        always {
+
+            sh 'docker logout || true'
+        }
+    }
+}
