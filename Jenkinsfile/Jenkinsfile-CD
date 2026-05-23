@@ -20,26 +20,43 @@ pipeline {
 
         stage('Check Kubernetes Connection') {
             steps {
-                sh 'kubectl get nodes'
+                sh '''
+                    echo "Checking cluster connection..."
+                    kubectl get nodes
+                '''
             }
         }
 
-        stage('Check / Create Deployment') {
+        stage('Verify Deployment YAML') {
             steps {
-                sh """
-                    if kubectl get deployment ${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE}; then
-                        echo "Deployment exists"
-                    else
-                        echo "Deployment not found, applying YAML..."
-                        kubectl apply -f deployment.yaml
+                sh '''
+                    echo "Checking repository structure..."
+                    ls -R
+
+                    if [ ! -f k8s/deployment.yaml ]; then
+                        echo "ERROR: k8s/deployment.yaml not found"
+                        exit 1
                     fi
-                """
+
+                    echo "Deployment YAML found"
+                '''
             }
         }
 
-        stage('Deploy To Kubernetes') {
+        stage('Apply Kubernetes Manifests') {
+            steps {
+                sh '''
+                    echo "Applying Kubernetes YAML..."
+                    kubectl apply -f k8s/deployment.yaml
+                '''
+            }
+        }
+
+        stage('Deploy Image Update') {
             steps {
                 sh """
+                    echo "Updating image in deployment..."
+
                     kubectl set image deployment/${DEPLOYMENT_NAME} \
                     backend-container=${IMAGE_NAME}:${IMAGE_TAG} \
                     -n ${K8S_NAMESPACE}
@@ -66,13 +83,14 @@ pipeline {
     }
 
     post {
+
         success {
-            echo "Deployment successful"
+            echo "✅ Deployment successful"
             echo "Image deployed: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-            echo "Deployment failed"
+            echo "❌ Deployment failed"
         }
     }
 }
