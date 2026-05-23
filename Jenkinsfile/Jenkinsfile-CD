@@ -3,7 +3,6 @@ pipeline {
     agent any
 
     parameters {
-
         string(
             name: 'IMAGE_TAG',
             defaultValue: 'latest',
@@ -12,30 +11,36 @@ pipeline {
     }
 
     environment {
-
         IMAGE_NAME = "debopriyoray662001824/backend-application"
-
         K8S_NAMESPACE = "default"
+        DEPLOYMENT_NAME = "backend-application"
     }
 
     stages {
 
         stage('Check Kubernetes Connection') {
-
             steps {
+                sh 'kubectl get nodes'
+            }
+        }
 
-                sh '''
-                    kubectl get nodes
-                '''
+        stage('Check / Create Deployment') {
+            steps {
+                sh """
+                    if kubectl get deployment ${DEPLOYMENT_NAME} -n ${K8S_NAMESPACE}; then
+                        echo "Deployment exists"
+                    else
+                        echo "Deployment not found, applying YAML..."
+                        kubectl apply -f deployment.yaml
+                    fi
+                """
             }
         }
 
         stage('Deploy To Kubernetes') {
-
             steps {
-
                 sh """
-                    kubectl set image deployment/backend-application \
+                    kubectl set image deployment/${DEPLOYMENT_NAME} \
                     backend-container=${IMAGE_NAME}:${IMAGE_TAG} \
                     -n ${K8S_NAMESPACE}
                 """
@@ -43,20 +48,16 @@ pipeline {
         }
 
         stage('Verify Rollout') {
-
             steps {
-
                 sh """
-                    kubectl rollout status deployment/backend-application \
+                    kubectl rollout status deployment/${DEPLOYMENT_NAME} \
                     -n ${K8S_NAMESPACE}
                 """
             }
         }
 
         stage('Show Pods') {
-
             steps {
-
                 sh """
                     kubectl get pods -n ${K8S_NAMESPACE}
                 """
@@ -65,16 +66,12 @@ pipeline {
     }
 
     post {
-
         success {
-
             echo "Deployment successful"
-
             echo "Image deployed: ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-
             echo "Deployment failed"
         }
     }
