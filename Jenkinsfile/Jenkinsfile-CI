@@ -31,7 +31,7 @@ pipeline {
                     withEnv(["PATH+MAVEN=${MAVEN_HOME}/bin"]) {
 
                         sh '''
-                            mvn clean install  -DskipTests
+                            mvn clean install -U  -DskipTests
                         '''
                     }
                 }
